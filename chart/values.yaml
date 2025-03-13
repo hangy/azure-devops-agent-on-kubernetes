@@ -19,8 +19,7 @@ agent:
   workingDirectory: "_work"
 
   # Additional environment variables, if you need
-  extraEnv: {}
-    # ENVNAME: "VALUE"
+  extraEnv: {} # ENVNAME: "VALUE"
 
 nameOverride: ""
 fullnameOverride: ""
@@ -49,6 +48,9 @@ volumeMounts: []
   # - name: dockersock
   #   mountPath: "/var/run/docker.sock"
 
+buildkit:
+  enabled: false
+
 serviceAccount:
   # The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
@@ -76,7 +78,6 @@ sideContainers:
   #       valueFrom:
   #         fieldRef:
   #           fieldPath: metadata.uid
-
 
 nodeSelector: {}
 tolerations: []

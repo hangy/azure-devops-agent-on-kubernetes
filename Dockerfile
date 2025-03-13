@@ -3,9 +3,11 @@ ARG ARG_UBUNTU_BASE_IMAGE_TAG="20.04"
 
 FROM ${ARG_UBUNTU_BASE_IMAGE}:${ARG_UBUNTU_BASE_IMAGE_TAG}
 WORKDIR /azp
+
 ARG ARG_TARGETARCH=linux-x64
 ARG ARG_VSTS_AGENT_VERSION=4.251.0
-
+ARG ARG_BUILDKIT_VERSION=0.19.0
+ARG ARG_BUILDKIT_VERSION=0.19.0
 
 # To make it easier for build and release pipelines to run apt-get,
 # configure apt to not require confirmation (assume the -y argument by default)
@@ -23,6 +25,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     iputils-ping \
     jq \
     lsb-release \
+    vim \
     software-properties-common \
     && rm -rf /var/lib/apt/lists/*
 RUN apt-get update && apt-get -y upgrade
@@ -35,6 +38,10 @@ RUN printenv \
 RUN curl -LsS https://vstsagentpackage.azureedge.net/agent/${ARG_VSTS_AGENT_VERSION}/vsts-agent-${ARG_TARGETARCH}-${ARG_VSTS_AGENT_VERSION}.tar.gz | tar -xz
 
 
+#Install buildkit
+RUN curl -fsSL -o /tmp/buildkit.tar.gz  https://github.com/moby/buildkit/releases/download/v${ARG_BUILDKIT_VERSION}/buildkit-v${ARG_BUILDKIT_VERSION}.linux-amd64.tar.gz
+RUN tar -xzf /tmp/buildkit.tar.gz -C /tmp/
+RUN mv /tmp/bin/* /usr/local/bin 
 
 # Install Azure CLI & Azure DevOps extension
 RUN curl -LsS https://aka.ms/InstallAzureCLIDeb | bash \
@@ -93,7 +100,7 @@ RUN apt-get update && apt-get -y upgrade
 
 
 # Copy start script
-COPY ./start.sh .
+COPY src/start.sh .
 RUN chmod +x start.sh
 
 
