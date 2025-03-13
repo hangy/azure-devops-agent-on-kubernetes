@@ -100,7 +100,7 @@ RUN apt-get update && apt-get -y upgrade
 
 
 # Copy start script
-COPY src/start.sh .
+COPY ./start.sh .
 RUN chmod +x start.sh
 
 
