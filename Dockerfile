@@ -5,8 +5,7 @@ FROM ${ARG_UBUNTU_BASE_IMAGE}:${ARG_UBUNTU_BASE_IMAGE_TAG}
 WORKDIR /azp
 
 ARG ARG_TARGETARCH=linux-x64
-ARG ARG_VSTS_AGENT_VERSION=4.251.0
-ARG ARG_BUILDKIT_VERSION=0.19.0
+ARG ARG_VSTS_AGENT_VERSION=4.255.0
 ARG ARG_BUILDKIT_VERSION=0.19.0
 
 # To make it easier for build and release pipelines to run apt-get,
@@ -22,6 +21,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
     git \
+    git-lfs \
     iputils-ping \
     jq \
     lsb-release \
