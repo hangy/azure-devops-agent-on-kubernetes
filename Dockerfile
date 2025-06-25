@@ -35,8 +35,7 @@ RUN apt-get update && apt-get -y upgrade
 # Download and extract the Azure DevOps Agent
 RUN printenv \
     && echo "Downloading Azure DevOps Agent version ${ARG_VSTS_AGENT_VERSION} for ${ARG_TARGETARCH}"
-RUN curl -LsS https://vstsagentpackage.azureedge.net/agent/${ARG_VSTS_AGENT_VERSION}/vsts-agent-${ARG_TARGETARCH}-${ARG_VSTS_AGENT_VERSION}.tar.gz | tar -xz
-
+RUN curl -LsS https://download.agent.dev.azure.com/agent/${ARG_VSTS_AGENT_VERSION}/vsts-agent-${ARG_TARGETARCH}-${ARG_VSTS_AGENT_VERSION}.tar.gz | tar -xz
 
 #Install buildkit
 RUN curl -fsSL -o /tmp/buildkit.tar.gz  https://github.com/moby/buildkit/releases/download/v${ARG_BUILDKIT_VERSION}/buildkit-v${ARG_BUILDKIT_VERSION}.linux-amd64.tar.gz
