@@ -1,0 +1,11 @@
+# Exclude files not needed in build context
+.git
+.gitignore
+README.md
+LICENSE
+chart/
+examples/
+test/
+*.md
+*.yml
+*.yaml
