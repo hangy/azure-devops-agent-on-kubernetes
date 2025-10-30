@@ -134,13 +134,11 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt \
     apt-get update && apt-get -y upgrade
 
-# Create non-root user and docker group, install sudo
+# Create non-root user and install sudo
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt \
     set -eux; \
-    if ! getent group docker >/dev/null; then groupadd docker; fi; \
     useradd -m -s /bin/bash -u "${USER_ID}" "${USER_NAME}"; \
-    usermod -aG docker "${USER_NAME}"; \
     apt-get update; \
     apt-get install -y sudo; \
     echo "${USER_NAME} ALL=(root) NOPASSWD:ALL" >> /etc/sudoers
