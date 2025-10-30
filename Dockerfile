@@ -114,7 +114,6 @@ COPY --chmod=775 --chown=azdouser:azdouser ./start.sh .
 
 RUN sudo chown -R azdouser /home/azdouser
 RUN sudo chown -R azdouser /azp
-RUN sudo chown -R azdouser /var/run/docker.sock || true
 USER azdouser
 
 
