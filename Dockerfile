@@ -102,14 +102,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt \
     apt-get update && apt-get -y upgrade
 
-
-
-# Copy start script
-COPY ./start.sh .
-RUN chmod +x start.sh
-
-
-
 # Create non-root user under docker group
 RUN useradd -m -s /bin/bash -u "1000" azdouser
 RUN groupadd docker && usermod -aG docker azdouser
@@ -118,6 +110,9 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get update \
     && apt-get install -y sudo \
     && echo azdouser ALL=\(root\) NOPASSWD:ALL >> /etc/sudoers
+
+# Copy start script
+COPY --chmod=775 --chown=azdouser:azdouser ./start.sh .
 
 RUN sudo chown -R azdouser /home/azdouser
 RUN sudo chown -R azdouser /azp
