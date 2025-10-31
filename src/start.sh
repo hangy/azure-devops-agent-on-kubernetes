@@ -4,14 +4,8 @@ if [ -x "$(command -v sudo)" ]; then
   {
     sudo chown -R azdouser /home/azdouser
     sudo chown -R azdouser /azp
-    sudo chown -R azdouser /var/run/docker.sock || true
-
-    if [ -S /var/run/docker.sock ]; then
-      sudo groupadd docker || true
-      sudo usermod -aG docker azdouser || true
-      sudo newgrp docker || true
-      echo "Docker.sock exists and processed!"
-    fi
+    # Docker socket permissions and group membership are now expected to be managed externally.
+    # If you need Docker CLI support, mount the socket with correct permissions from the host.
   } || true
 fi
 

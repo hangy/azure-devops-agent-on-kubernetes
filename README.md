@@ -161,7 +161,7 @@ helm delete {RELEASE-NAME}
 
 ## docker CLI support
 
-If you want to use Docker CLI in the agent, you need to override `volumes` and `volumeMounts` parameters as shown below.
+If you want to use Docker CLI in the agent, you need to override `volumes` and `volumeMounts` parameters as shown below. **Note:** Docker socket permissions and group membership must be managed externally; the container does not modify these settings.
 
 ```yaml
 volumes:
@@ -175,7 +175,7 @@ volumeMounts: []
 
 ## Example overriden values.yaml for running instance
 
-This the example values.yaml that you can use to run an instance with provided PAT secret and Docker CLI support.
+This is an example values.yaml that you can use to run an instance with provided PAT secret and Docker CLI support. **Ensure the Docker socket is mounted with appropriate permissions from the host. The container does not change socket permissions or group membership.**
 
 ```yaml
 fullnameOverride: azdo-agent
@@ -203,7 +203,7 @@ volumeMounts:
 
 ## Example overriden values.yaml for running instance with provided PAT directly without secret
 
-This the example values.yaml that you can use to run an instance with provided PAT directly and Docker CLI support.
+This is an example values.yaml that you can use to run an instance with provided PAT directly and Docker CLI support. **Ensure the Docker socket is mounted with appropriate permissions from the host. The container does not change socket permissions or group membership.**
 
 ```yaml
 fullnameOverride: azdo-agent
