@@ -32,17 +32,16 @@ LABEL org.opencontainers.image.title="Azure DevOps Agent on Kubernetes" \
 # To make it easier for build and release pipelines to run apt-get,
 # configure apt to not require confirmation (assume the -y argument by default)
 ENV DEBIAN_FRONTEND=noninteractive
+SHELL ["/bin/bash", "-euxo", "pipefail", "-c"]
 RUN echo "APT::Get::Assume-Yes \"true\";" > /etc/apt/apt.conf.d/90assumeyes
 
 
 # Install required base tools (optional upgrade controlled by APT_UPGRADE)
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt \
-    set -euxo pipefail; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
       apt-transport-https \
-      apt-utils \
       ca-certificates \
       curl \
       git \
@@ -127,17 +126,9 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get update \
     && apt-get install -y docker-ce-cli=${DOCKER_CLI_VERSION}
 
-
-
-# do apt-get upgrade
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt \
-    apt-get update && apt-get -y upgrade
-
 # Create non-root user and install sudo
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt \
-    set -eux; \
     useradd -m -s /bin/bash -u "${USER_ID}" "${USER_NAME}"; \
     apt-get update; \
     apt-get install -y sudo; \
