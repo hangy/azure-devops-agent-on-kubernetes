@@ -14,9 +14,6 @@ ARG HELM_VERSION=v3.16.2
 ARG HELM_SHA256=9318379b847e333460d33d291d4c88be01b0fd8ebe27a78bd7c96e27bf57e42a
 ARG KUBECTL_VERSION=v1.31.2
 ARG KUBECTL_SHA256=07f7a0e5a47e3f1fe0c248f2d4ac223d7b45c1e684f1f7a43ed5c2d8cf281d6e
-ARG AZURE_CLI_VERSION=2.65.0-1~focal
-ARG POWERSHELL_VERSION=7.4.6-1.deb
-ARG DOCKER_CLI_VERSION=5:27.3.1-1~ubuntu.20.04~focal
 ARG AZDO_EXTENSION_VERSION=1.0.1
 ARG APT_UPGRADE=1
 ARG USER_ID=1000
@@ -62,13 +59,14 @@ RUN echo "Downloading Azure DevOps Agent version ${ARG_VSTS_AGENT_VERSION} for $
     && rm -f agent.tar.gz
 
 
-# Install Azure CLI & Azure DevOps extension
+# Add Microsoft repository and install Azure CLI & PowerShell
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt \
-    curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /usr/share/keyrings/microsoft-archive-keyring.gpg \
-    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/microsoft-archive-keyring.gpg] https://packages.microsoft.com/repos/azure-cli/ $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/azure-cli.list \
-    && apt-get update \
-    && apt-get install -y azure-cli=${AZURE_CLI_VERSION}
+    curl -fsSLO "https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb"; \
+    dpkg -i packages-microsoft-prod.deb; \
+    rm -f packages-microsoft-prod.deb; \
+    apt-get update; \
+    apt-get install -y azure-cli powershell
 RUN az extension add --name azure-devops --version ${AZDO_EXTENSION_VERSION}
 
 
@@ -105,17 +103,6 @@ RUN curl -fsSL "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kub
 
 
 
-# Install Powershell Core
-RUN curl -fsSLO "https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb" \
-    && dpkg -i packages-microsoft-prod.deb \
-    && rm -f packages-microsoft-prod.deb
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt \
-    apt-get update \
-    && apt-get install -y powershell=${POWERSHELL_VERSION}
-
-
-
 # Install Docker CLI
 RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
 RUN echo \
@@ -124,7 +111,7 @@ RUN echo \
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt \
     apt-get update \
-    && apt-get install -y docker-ce-cli=${DOCKER_CLI_VERSION}
+    && apt-get install -y docker-ce-cli
 
 # Create non-root user and install sudo
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
