@@ -14,7 +14,6 @@ ARG HELM_VERSION=v3.16.2
 ARG HELM_SHA256=9318379b847e333460d33d291d4c88be01b0fd8ebe27a78bd7c96e27bf57e42a
 ARG KUBECTL_VERSION=v1.31.2
 ARG KUBECTL_SHA256=07f7a0e5a47e3f1fe0c248f2d4ac223d7b45c1e684f1f7a43ed5c2d8cf281d6e
-ARG AZDO_EXTENSION_VERSION=1.0.1
 ARG APT_UPGRADE=1
 ARG USER_ID=1000
 ARG USER_NAME=azdouser
@@ -66,8 +65,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     dpkg -i packages-microsoft-prod.deb; \
     rm -f packages-microsoft-prod.deb; \
     apt-get update; \
-    apt-get install -y azure-cli powershell
-RUN az extension add --name azure-devops --version ${AZDO_EXTENSION_VERSION}
+    apt-get install -y azure-cli powershell; \
+    az extension add --name azure-devops
 
 
 
