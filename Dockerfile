@@ -45,7 +45,9 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
       iputils-ping \
       jq \
       lsb-release \
-      software-properties-common; \
+      software-properties-common \
+      sudo \
+      unzip; \
     if [ "${APT_UPGRADE}" = "1" ]; then apt-get -y upgrade; fi
 
 
@@ -67,14 +69,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get update; \
     apt-get install -y azure-cli powershell; \
     az extension add --name azure-devops
-
-
-
-# Install required tools
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt \
-    apt-get update && apt-get install -y --no-install-recommends \
-    unzip
 
 
 
@@ -112,12 +106,10 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get update \
     && apt-get install -y docker-ce-cli
 
-# Create non-root user and install sudo
+# Create non-root user
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt \
     useradd -m -s /bin/bash -u "${USER_ID}" "${USER_NAME}"; \
-    apt-get update; \
-    apt-get install -y sudo; \
     echo "${USER_NAME} ALL=(root) NOPASSWD:ALL" >> /etc/sudoers
 
 # Copy start script
