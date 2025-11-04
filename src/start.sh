@@ -11,6 +11,44 @@ fi
 
 set -e
 
+# -----------------------------------------------------------------------------
+# Optional Docker socket group mapping
+# We no longer try to change permissions during image build (that never worked
+# for a runtime-mounted host socket). Instead, if /var/run/docker.sock is
+# mounted, we dynamically create (or reuse) a group with the same GID and add
+# the agent user to it. This avoids chmod 666 on the socket and keeps least
+# privilege.
+#
+# If the group membership changes, the current process won't automatically see
+# it; we re-exec the script via 'sg' once (guarded by an env flag) to pick up
+# the new supplementary group. This is safe because we do it early before the
+# agent config starts.
+# -----------------------------------------------------------------------------
+if [ -z "$DOCKER_GROUP_REFRESHED" ] && [ -S /var/run/docker.sock ]; then
+  USER_NAME="azdouser"
+  DOCKER_GID="$(stat -c %g /var/run/docker.sock 2>/dev/null)"
+  if [ -S /var/run/docker.sock ] && [ -z "$DOCKER_GID" ]; then
+    echo 1>&2 "warning: failed to get GID for /var/run/docker.sock (stat failed or insufficient permissions)"
+  fi
+  if [ -n "$DOCKER_GID" ]; then
+    EXISTING_GROUP="$(getent group "$DOCKER_GID" | cut -d: -f1 || true)"
+    TARGET_GROUP="${EXISTING_GROUP:-docker}"
+    if [ -x "$(command -v sudo)" ]; then
+      if [ -z "$EXISTING_GROUP" ]; then
+        sudo groupadd -g "$DOCKER_GID" "$TARGET_GROUP" 2>/dev/null || true
+      fi
+      if ! id -nG "$USER_NAME" | grep -qw "$TARGET_GROUP"; then
+        sudo usermod -aG "$TARGET_GROUP" "$USER_NAME" 2>/dev/null || true
+        # Re-exec to apply new group membership to current shell/session.
+        if [ "$(id -un)" = "$USER_NAME" ]; then
+          export DOCKER_GROUP_REFRESHED=1
+          exec sg "$TARGET_GROUP" "$0" "$@"
+        fi
+      fi
+    fi
+  fi
+fi
+
 if [ -z "$AZP_URL" ]; then
   echo 1>&2 "error: missing AZP_URL environment variable"
   exit 1
