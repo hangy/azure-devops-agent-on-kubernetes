@@ -2,8 +2,7 @@
 
 if [ -x "$(command -v sudo)" ]; then
   {
-    sudo chown -R azdouser /home/azdouser
-    sudo chown -R azdouser /azp
+        sudo chown -R ubuntu /azp
     # Docker socket permissions and group membership are now expected to be managed externally.
     # If you need Docker CLI support, mount the socket with correct permissions from the host.
   } || true
@@ -25,7 +24,7 @@ set -e
 # agent config starts.
 # -----------------------------------------------------------------------------
 if [ -z "$DOCKER_GROUP_REFRESHED" ] && [ -S /var/run/docker.sock ]; then
-  USER_NAME="azdouser"
+  USER_NAME="ubuntu"
   DOCKER_GID="$(stat -c %g /var/run/docker.sock 2>/dev/null)"
   if [ -S /var/run/docker.sock ] && [ -z "$DOCKER_GID" ]; then
     echo 1>&2 "warning: failed to get GID for /var/run/docker.sock (stat failed or insufficient permissions)"

@@ -1,5 +1,5 @@
 ARG ARG_UBUNTU_BASE_IMAGE="ubuntu"
-ARG ARG_UBUNTU_BASE_IMAGE_TAG="20.04"
+ARG ARG_UBUNTU_BASE_IMAGE_TAG="24.04"
 
 FROM ${ARG_UBUNTU_BASE_IMAGE}:${ARG_UBUNTU_BASE_IMAGE_TAG}
 WORKDIR /azp
@@ -26,8 +26,7 @@ ARG KUBECTL_VERSION=v1.35.0
 ARG KUBECTL_SHA256_AMD64=a2e984a18a0c063279d692533031c1eff93a262afcc0afdc517375432d060989
 ARG KUBECTL_SHA256_ARM64=58f82f9fe796c375c5c4b8439850b0f3f4d401a52434052f2df46035a8789e25
 ARG APT_UPGRADE=1
-ARG USER_ID=1000
-ARG USER_NAME=azdouser
+ARG USER_NAME=ubuntu
 
 LABEL org.opencontainers.image.title="Azure DevOps Agent on Kubernetes" \
       org.opencontainers.image.source="https://github.com/hangy/azure-devops-agent-on-kubernetes" \
@@ -176,15 +175,12 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     && apt-get install -y docker-ce-cli
 
 # Create non-root user
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt \
-    useradd -m -s /bin/bash -u "${USER_ID}" "${USER_NAME}"; \
-    echo "${USER_NAME} ALL=(root) NOPASSWD:ALL" >> /etc/sudoers
+RUN echo "${USER_NAME} ALL=(root) NOPASSWD:ALL" >> /etc/sudoers
 
 # Copy start script
 COPY --chmod=775 --chown=${USER_NAME}:${USER_NAME} ./start.sh .
 
-RUN chown -R ${USER_NAME}:${USER_NAME} /home/${USER_NAME} /azp \
+RUN chown -R ${USER_NAME} /azp \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 USER ${USER_NAME}
 
