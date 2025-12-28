@@ -11,13 +11,17 @@ ARG ARG_VSTS_AGENT_SHA256_ARM64=f6d0b96fac0e8dd290be18d92d70b9de4a683928faa89ac7
 
 # Tool versions for reproducible builds
 ARG BUILDKIT_VERSION=0.26.3
-ARG BUILDKIT_SHA256=249ae16ba4be59fadb51a49ff4d632bbf37200e2b6e187fa8574f0f1bce8166b
+ARG BUILDKIT_SHA256_AMD64=249ae16ba4be59fadb51a49ff4d632bbf37200e2b6e187fa8574f0f1bce8166b
+ARG BUILDKIT_SHA256_ARM64=a98829f1b1b9ec596eb424dd03f03b9c7b596edac83e6700adf83ba0cb0d5f80
 ARG YQ_VERSION=v4.50.1
-ARG YQ_SHA256=c7a1278e6bbc4924f41b56db838086c39d13ee25dcb22089e7fbf16ac901f0d4
-ARG HELM_VERSION=v4.0.1
-ARG HELM_SHA256=e0365548f01ed52a58a1181ad310b604a3244f59257425bb1739499372bdff60
+ARG YQ_SHA256_AMD64=c7a1278e6bbc4924f41b56db838086c39d13ee25dcb22089e7fbf16ac901f0d4
+ARG YQ_SHA256_ARM64=cf0a663d8e4e00bb61507c5237b95b45a6aaa1fbedac77f4dc8abdadd5e2b745
+ARG HELM_VERSION=v4.0.4
+ARG HELM_SHA256_AMD64=29454bc351f4433e66c00f5d37841627cbbcc02e4c70a6d796529d355237671c
+ARG HELM_SHA256_ARM64=16b88acc6503d646b7537a298e7389bef469c5cc9ebadf727547abe9f6a35903
 ARG KUBECTL_VERSION=v1.35.0
-ARG KUBECTL_SHA256=a2e984a18a0c063279d692533031c1eff93a262afcc0afdc517375432d060989
+ARG KUBECTL_SHA256_AMD64=a2e984a18a0c063279d692533031c1eff93a262afcc0afdc517375432d060989
+ARG KUBECTL_SHA256_ARM64=58f82f9fe796c375c5c4b8439850b0f3f4d401a52434052f2df46035a8789e25
 ARG APT_UPGRADE=1
 ARG USER_ID=1000
 ARG USER_NAME=azdouser
@@ -33,7 +37,6 @@ LABEL org.opencontainers.image.title="Azure DevOps Agent on Kubernetes" \
 ENV DEBIAN_FRONTEND=noninteractive
 SHELL ["/bin/bash", "-euxo", "pipefail", "-c"]
 RUN echo "APT::Get::Assume-Yes \"true\";" > /etc/apt/apt.conf.d/90assumeyes
-
 
 # Install required base tools (optional upgrade controlled by APT_UPGRADE)
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
@@ -53,14 +56,11 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         unzip; \
     if [ "${APT_UPGRADE}" = "1" ]; then apt-get -y upgrade; fi
 
-
-
 # Download and extract the Azure DevOps Agent (with optional checksum verification)
 RUN set -eux; \
     case "${TARGETARCH}" in \
         amd64) AGENT_ARCH=linux-x64; AGENT_SHA="${ARG_VSTS_AGENT_SHA256_AMD64}" ;; \
-        arm64) AGENT_ARCH=linux-arm64; AGENT_SHA="${ARG_VSTS_AGENT_SHA256_ARM64}" ;; \
-        aarch64) AGENT_ARCH=linux-arm64; AGENT_SHA="${ARG_VSTS_AGENT_SHA256_ARM64}" ;; \
+        arm64|aarch64) AGENT_ARCH=linux-arm64; AGENT_SHA="${ARG_VSTS_AGENT_SHA256_ARM64}" ;; \
         *) echo "Unsupported TARGETARCH=${TARGETARCH}"; exit 1 ;; \
     esac; \
     echo "Downloading Azure DevOps Agent version ${ARG_VSTS_AGENT_VERSION} for ${AGENT_ARCH}"; \
@@ -70,10 +70,17 @@ RUN set -eux; \
     rm -f agent.tar.gz
 
 # Install buildkit (download, extract, cleanup)
-RUN curl -fsSL -o /tmp/buildkit.tar.gz "https://github.com/moby/buildkit/releases/download/v${BUILDKIT_VERSION}/buildkit-v${BUILDKIT_VERSION}.linux-amd64.tar.gz" \
-    && tar -xzf /tmp/buildkit.tar.gz -C /tmp/ \
-    && mv /tmp/bin/* /usr/local/bin \
-    && rm -rf /tmp/buildkit.tar.gz /tmp/bin
+RUN set -eux; \
+    case "${TARGETARCH}" in \
+        amd64) BK_ARCH=linux-amd64; BK_SHA="${BUILDKIT_SHA256_AMD64:-}";; \
+        arm64|aarch64) BK_ARCH=linux-arm64; BK_SHA="${BUILDKIT_SHA256_ARM64:-}";; \
+        *) echo "Unsupported TARGETARCH=${TARGETARCH}"; exit 1;; \
+    esac; \
+    curl -fsSL -o /tmp/buildkit.tar.gz "https://github.com/moby/buildkit/releases/download/v${BUILDKIT_VERSION}/buildkit-v${BUILDKIT_VERSION}.${BK_ARCH}.tar.gz"; \
+    if [ -n "${BK_SHA}" ]; then echo "${BK_SHA}  /tmp/buildkit.tar.gz" | sha256sum -c -; else echo "Skipping BuildKit checksum verification for ${TARGETARCH}"; fi; \
+    tar -xzf /tmp/buildkit.tar.gz -C /tmp/; \
+    mv /tmp/bin/* /usr/local/bin; \
+    rm -rf /tmp/buildkit.tar.gz /tmp/bin
 
 # Add Microsoft repository and install Azure CLI & PowerShell
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
@@ -85,31 +92,41 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get install -y azure-cli powershell; \
     az extension add --name azure-devops
 
-
-
 # Install yq
-RUN curl -fsSL "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64" -o /usr/bin/yq \
-    && echo "${YQ_SHA256}  /usr/bin/yq" | sha256sum -c - \
-    && chmod +x /usr/bin/yq
-
-
+RUN set -eux; \
+    case "${TARGETARCH}" in \
+        amd64) YQ_ARCH=amd64; YQ_SHA="${YQ_SHA256_AMD64:-}";; \
+        arm64|aarch64) YQ_ARCH=arm64; YQ_SHA="${YQ_SHA256_ARM64:-}";; \
+        *) echo "Unsupported TARGETARCH=${TARGETARCH}"; exit 1;; \
+    esac; \
+    curl -fsSL "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_${YQ_ARCH}" -o /usr/bin/yq; \
+    if [ -n "${YQ_SHA}" ]; then echo "${YQ_SHA}  /usr/bin/yq" | sha256sum -c -; else echo "Skipping yq checksum verification for ${TARGETARCH}"; fi; \
+    chmod +x /usr/bin/yq
 
 # Install Helm
-RUN curl -fsSL "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz" -o helm.tar.gz \
-    && echo "${HELM_SHA256}  helm.tar.gz" | sha256sum -c - \
-    && tar -zxvf helm.tar.gz \
-    && mv linux-amd64/helm /usr/bin/helm \
-    && rm -rf linux-amd64 helm.tar.gz \
-    && chmod +x /usr/bin/helm
-
-
+RUN set -eux; \
+    case "${TARGETARCH}" in \
+        amd64) HELM_ARCH=amd64; HELM_SHA="${HELM_SHA256_AMD64:-}"; HELM_DIR=linux-amd64;; \
+        arm64|aarch64) HELM_ARCH=arm64; HELM_SHA="${HELM_SHA256_ARM64:-}"; HELM_DIR=linux-arm64;; \
+        *) echo "Unsupported TARGETARCH=${TARGETARCH}"; exit 1;; \
+    esac; \
+    curl -fsSL "https://get.helm.sh/helm-${HELM_VERSION}-linux-${HELM_ARCH}.tar.gz" -o helm.tar.gz; \
+    if [ -n "${HELM_SHA}" ]; then echo "${HELM_SHA}  helm.tar.gz" | sha256sum -c -; else echo "Skipping Helm checksum verification for ${TARGETARCH}"; fi; \
+    tar -zxvf helm.tar.gz; \
+    mv "${HELM_DIR}"/helm /usr/bin/helm; \
+    rm -rf "${HELM_DIR}" helm.tar.gz; \
+    chmod +x /usr/bin/helm
 
 # Install Kubectl
-RUN curl -fsSL "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl" -o /usr/bin/kubectl \
-    && echo "${KUBECTL_SHA256}  /usr/bin/kubectl" | sha256sum -c - \
-    && chmod +x /usr/bin/kubectl
-
-
+RUN set -eux; \
+    case "${TARGETARCH}" in \
+        amd64) KUBECTL_ARCH=amd64; KUBECTL_SHA_CHECK="${KUBECTL_SHA256_AMD64:-}";; \
+        arm64|aarch64) KUBECTL_ARCH=arm64; KUBECTL_SHA_CHECK="${KUBECTL_SHA256_ARM64:-}";; \
+        *) echo "Unsupported TARGETARCH=${TARGETARCH}"; exit 1;; \
+    esac; \
+    curl -fsSL "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/${KUBECTL_ARCH}/kubectl" -o /usr/bin/kubectl; \
+    if [ -n "${KUBECTL_SHA_CHECK}" ]; then echo "${KUBECTL_SHA_CHECK}  /usr/bin/kubectl" | sha256sum -c -; else echo "Skipping kubectl checksum verification for ${TARGETARCH}"; fi; \
+    chmod +x /usr/bin/kubectl
 
 # Install Docker CLI
 RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
