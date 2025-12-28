@@ -3,9 +3,11 @@ ARG ARG_UBUNTU_BASE_IMAGE_TAG="20.04"
 
 FROM ${ARG_UBUNTU_BASE_IMAGE}:${ARG_UBUNTU_BASE_IMAGE_TAG}
 WORKDIR /azp
-ARG ARG_TARGETARCH=linux-x64
+# BuildKit sets TARGETARCH/TARGETPLATFORM when using buildx/--platform
+ARG TARGETARCH=amd64
 ARG ARG_VSTS_AGENT_VERSION=4.266.2
-ARG ARG_VSTS_AGENT_SHA256=303124cf6296a18bda06fcc6ed2e2424792a25324378a9a62df72fc0f564a27a
+ARG ARG_VSTS_AGENT_SHA256_AMD64=303124cf6296a18bda06fcc6ed2e2424792a25324378a9a62df72fc0f564a27a
+ARG ARG_VSTS_AGENT_SHA256_ARM64=f6d0b96fac0e8dd290be18d92d70b9de4a683928faa89ac76547d4c5154f56d0
 
 # Tool versions for reproducible builds
 ARG BUILDKIT_VERSION=0.26.3
@@ -54,11 +56,18 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 
 
 # Download and extract the Azure DevOps Agent (with optional checksum verification)
-RUN echo "Downloading Azure DevOps Agent version ${ARG_VSTS_AGENT_VERSION} for ${ARG_TARGETARCH}" \
-    && curl -fsSL -o agent.tar.gz "https://download.agent.dev.azure.com/agent/${ARG_VSTS_AGENT_VERSION}/vsts-agent-${ARG_TARGETARCH}-${ARG_VSTS_AGENT_VERSION}.tar.gz" \
-    && if [ "${ARG_VSTS_AGENT_SHA256}" != "unset" ]; then echo "${ARG_VSTS_AGENT_SHA256}  agent.tar.gz" | sha256sum -c -; else echo "Skipping checksum verification for agent (ARG_VSTS_AGENT_SHA256 unset)"; fi \
-    && tar -xzf agent.tar.gz \
-    && rm -f agent.tar.gz
+RUN set -eux; \
+    case "${TARGETARCH}" in \
+        amd64) AGENT_ARCH=linux-x64; AGENT_SHA="${ARG_VSTS_AGENT_SHA256_AMD64}" ;; \
+        arm64) AGENT_ARCH=linux-arm64; AGENT_SHA="${ARG_VSTS_AGENT_SHA256_ARM64}" ;; \
+        aarch64) AGENT_ARCH=linux-arm64; AGENT_SHA="${ARG_VSTS_AGENT_SHA256_ARM64}" ;; \
+        *) echo "Unsupported TARGETARCH=${TARGETARCH}"; exit 1 ;; \
+    esac; \
+    echo "Downloading Azure DevOps Agent version ${ARG_VSTS_AGENT_VERSION} for ${AGENT_ARCH}"; \
+    curl -fsSL -o agent.tar.gz "https://download.agent.dev.azure.com/agent/${ARG_VSTS_AGENT_VERSION}/vsts-agent-${AGENT_ARCH}-${ARG_VSTS_AGENT_VERSION}.tar.gz"; \
+    if [ "${AGENT_SHA}" != "unset" ] && [ -n "${AGENT_SHA}" ]; then echo "${AGENT_SHA}  agent.tar.gz" | sha256sum -c -; else echo "Skipping checksum verification for agent (checksum unset for ${TARGETARCH})"; fi; \
+    tar -xzf agent.tar.gz; \
+    rm -f agent.tar.gz
 
 # Install buildkit (download, extract, cleanup)
 RUN curl -fsSL -o /tmp/buildkit.tar.gz "https://github.com/moby/buildkit/releases/download/v${BUILDKIT_VERSION}/buildkit-v${BUILDKIT_VERSION}.linux-amd64.tar.gz" \
