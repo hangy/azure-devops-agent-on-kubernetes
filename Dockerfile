@@ -13,6 +13,9 @@ ARG ARG_VSTS_AGENT_SHA256_ARM64=f6d0b96fac0e8dd290be18d92d70b9de4a683928faa89ac7
 ARG BUILDKIT_VERSION=0.26.3
 ARG BUILDKIT_SHA256_AMD64=249ae16ba4be59fadb51a49ff4d632bbf37200e2b6e187fa8574f0f1bce8166b
 ARG BUILDKIT_SHA256_ARM64=a98829f1b1b9ec596eb424dd03f03b9c7b596edac83e6700adf83ba0cb0d5f80
+ARG POWERSHELL_VERSION=7.5.4
+ARG POWERSHELL_SHA256_AMD64=1FD7983FE56CA9E6233F126925EDB24BF6B6B33E356B69996D925C4DB94E2FEF
+ARG POWERSHELL_SHA256_ARM64=4B32D4CB86A43DFB83D5602D0294295BF22FAFBF9E0785D1AAEF81938CDA92F8
 ARG YQ_VERSION=v4.50.1
 ARG YQ_SHA256_AMD64=c7a1278e6bbc4924f41b56db838086c39d13ee25dcb22089e7fbf16ac901f0d4
 ARG YQ_SHA256_ARM64=cf0a663d8e4e00bb61507c5237b95b45a6aaa1fbedac77f4dc8abdadd5e2b745
@@ -49,6 +52,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         git \
         git-lfs \
         iputils-ping \
+        libunwind8 \
         jq \
         lsb-release \
         software-properties-common \
@@ -82,15 +86,48 @@ RUN set -eux; \
     mv /tmp/bin/* /usr/local/bin; \
     rm -rf /tmp/buildkit.tar.gz /tmp/bin
 
-# Add Microsoft repository and install Azure CLI & PowerShell
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt \
-    curl -fsSLO "https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb"; \
-    dpkg -i packages-microsoft-prod.deb; \
-    rm -f packages-microsoft-prod.deb; \
+# Install PowerShell from binary archive for all architectures (verify checksum)
+RUN set -eux; \
+    case "${TARGETARCH}" in \
+        amd64) PS_ARCH="x64"; PS_SHA="${POWERSHELL_SHA256_AMD64}";; \
+        arm64|aarch64) PS_ARCH="arm64"; PS_SHA="${POWERSHELL_SHA256_ARM64}";; \
+        *) echo "Unsupported TARGETARCH=${TARGETARCH}"; exit 1;; \
+    esac; \
+    PS_TGZ="powershell-${POWERSHELL_VERSION}-linux-${PS_ARCH}.tar.gz"; \
+    PS_URL="https://github.com/PowerShell/PowerShell/releases/download/v${POWERSHELL_VERSION}/${PS_TGZ}"; \
+    curl -fsSL "${PS_URL}" -o /tmp/${PS_TGZ}; \
+    echo "${PS_SHA}  /tmp/${PS_TGZ}" | tr '[:upper:]' '[:lower:]' | sha256sum -c - || { echo "PowerShell checksum mismatch"; exit 1; }; \
+    mkdir -p /opt/microsoft/powershell/${POWERSHELL_VERSION} && \
+    tar -xzf /tmp/${PS_TGZ} -C /opt/microsoft/powershell/${POWERSHELL_VERSION} && \
+    chmod +x /opt/microsoft/powershell/${POWERSHELL_VERSION}/pwsh; \
+    ln -sf /opt/microsoft/powershell/${POWERSHELL_VERSION}/pwsh /usr/bin/pwsh; \    
+    rm -f /tmp/${PS_TGZ}
+
+# Install Azure CLI using keyrings + sources approach (deb_install.sh)
+RUN set -eux; \
+    mkdir -p /etc/apt/keyrings; \
+    curl -sSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > /etc/apt/keyrings/microsoft.gpg; \
+    chmod go+r /etc/apt/keyrings/microsoft.gpg; \
+    CLI_REPO=$(lsb_release -cs); \
+    # If the distribution codename is not present in the azure-cli dists, fall back to common names
+    if ! curl -sL https://packages.microsoft.com/repos/azure-cli/dists/ | grep -q "${CLI_REPO}"; then \
+        DIST=$(lsb_release -is); \
+        case "${DIST}" in \
+            Ubuntu*) CLI_REPO=jammy ;; \
+            Debian*) CLI_REPO=bookworm ;; \
+            *) CLI_REPO=jammy ;; \
+        esac; \
+    fi; \
+    echo "Types: deb" > /etc/apt/sources.list.d/azure-cli.sources; \
+    echo "URIs: https://packages.microsoft.com/repos/azure-cli/" >> /etc/apt/sources.list.d/azure-cli.sources; \
+    echo "Suites: ${CLI_REPO}" >> /etc/apt/sources.list.d/azure-cli.sources; \
+    echo "Components: main" >> /etc/apt/sources.list.d/azure-cli.sources; \
+    echo "Architectures: $(dpkg --print-architecture)" >> /etc/apt/sources.list.d/azure-cli.sources; \
+    echo "Signed-by: /etc/apt/keyrings/microsoft.gpg" >> /etc/apt/sources.list.d/azure-cli.sources; \
     apt-get update; \
-    apt-get install -y azure-cli powershell; \
-    az extension add --name azure-devops
+    apt-get install -y azure-cli; \
+    az extension add --name azure-devops || true; \
+    rm -rf /var/lib/apt/lists/*
 
 # Install yq
 RUN set -eux; \
