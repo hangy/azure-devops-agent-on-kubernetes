@@ -9,7 +9,16 @@ if [ -x "$(command -v sudo)" ]; then
     if [ -S /var/run/docker.sock ]; then
       sudo groupadd docker || true
       sudo usermod -aG docker azdouser || true
-      sudo newgrp docker || true
+      
+      # Check if we need to re-execute with the docker group
+      TARGET_GROUP="docker"
+      if ! groups | grep -q "\b${TARGET_GROUP}\b"; then
+        echo "Re-executing script with docker group membership..."
+        # Properly escape arguments for passing through sg -c
+        printf -v ESCAPED_ARGS '%q ' "$@"
+        exec sg "$TARGET_GROUP" -c "\"$0\" $ESCAPED_ARGS"
+      fi
+      
       echo "Docker.sock exists and processed!"
     fi
   } || true
