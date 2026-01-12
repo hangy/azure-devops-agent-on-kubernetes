@@ -15,14 +15,8 @@ if [ -x "$(command -v sudo)" ]; then
       if ! groups | grep -q "\b${TARGET_GROUP}\b"; then
         echo "Re-executing script with docker group membership..."
         # Properly escape script path and arguments for passing through sg -c
-        printf -v ESCAPED_SCRIPT '%q' "$0"
-        if [ $# -eq 0 ]; then
-          exec sg "$TARGET_GROUP" -c "$ESCAPED_SCRIPT"
-        else
-          printf -v ESCAPED_ARGS '%q ' "$@"
-          ESCAPED_ARGS=${ESCAPED_ARGS% }  # Remove trailing space
-          exec sg "$TARGET_GROUP" -c "$ESCAPED_SCRIPT $ESCAPED_ARGS"
-        fi
+        printf -v cmd '%q ' "$0" "$@"
+        exec sg "$TARGET_GROUP" -c "${cmd% }"
       fi
       
       echo "Docker.sock exists and processed!"
