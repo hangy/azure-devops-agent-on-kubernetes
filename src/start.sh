@@ -41,7 +41,12 @@ if [ -z "$DOCKER_GROUP_REFRESHED" ] && [ -S /var/run/docker.sock ]; then
         # Re-exec to apply new group membership to current shell/session.
         if [ "$(id -un)" = "$USER_NAME" ]; then
           export DOCKER_GROUP_REFRESHED=1
-          exec sg "$TARGET_GROUP" "$0" "$@"
+          if [ $# -gt 0 ]; then
+            printf -v ESCAPED_ARGS '%q ' "$@"
+            exec sg "$TARGET_GROUP" -c "\"$0\" $ESCAPED_ARGS"
+          else
+            exec sg "$TARGET_GROUP" -c "\"$0\""
+          fi
         fi
       fi
     fi
