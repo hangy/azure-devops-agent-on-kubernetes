@@ -16,6 +16,7 @@ if [ -x "$(command -v sudo)" ]; then
         echo "Re-executing script with docker group membership..."
         # Properly escape arguments for passing through sg -c
         printf -v ESCAPED_ARGS '%q ' "$@"
+        ESCAPED_ARGS=${ESCAPED_ARGS% }  # Remove trailing space
         exec sg "$TARGET_GROUP" -c "\"$0\" $ESCAPED_ARGS"
       fi
       
