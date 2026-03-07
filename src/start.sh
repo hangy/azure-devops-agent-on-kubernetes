@@ -9,7 +9,17 @@ if [ -x "$(command -v sudo)" ]; then
     if [ -S /var/run/docker.sock ]; then
       sudo groupadd docker || true
       sudo usermod -aG docker azdouser || true
-      sudo newgrp docker || true
+      
+      # Check if we need to re-execute with the docker group
+      TARGET_GROUP="docker"
+      if ! id -Gn | grep -q "\b${TARGET_GROUP}\b"; then
+        echo "Re-executing script with docker group membership..."
+        # Properly escape script path and arguments for passing through sg -c
+        printf -v cmd '%q ' "$0" "$@"
+        # ${cmd% } removes the trailing space added by printf
+        exec sg "$TARGET_GROUP" -c "${cmd% }"
+      fi
+      
       echo "Docker.sock exists and processed!"
     fi
   } || true
