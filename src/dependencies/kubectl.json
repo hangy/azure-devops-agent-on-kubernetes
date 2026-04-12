@@ -1,0 +1,9 @@
+{
+  "name": "kubectl",
+  "version": "v1.35.3",
+  "sha256": {
+    "amd64": "fd31c7d7129260e608f6faf92d5984c3267ad0b5ead3bced2fe125686e286ad6",
+    "arm64": "6f0cd088a82dde5d5807122056069e2fac4ed447cc518efc055547ae46525f14"
+  },
+  "download_url": "https://dl.k8s.io/release/{version}/bin/linux/{arch}/kubectl"
+}

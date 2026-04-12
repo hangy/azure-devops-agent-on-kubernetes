@@ -1,0 +1,61 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "enabledManagers": ["dockerfile", "custom.jsonata"],
+  "customManagers": [
+    {
+      "customType": "jsonata",
+      "fileFormat": "json",
+      "managerFilePatterns": ["src/dependencies/agent.json"],
+      "matchStrings": ["{\"depName\": 'microsoft/azure-pipelines-agent', \"currentValue\": version}"],
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v?(?<version>.*)$",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "jsonata",
+      "fileFormat": "json",
+      "managerFilePatterns": ["src/dependencies/buildkit.json"],
+      "matchStrings": ["{\"depName\": 'moby/buildkit', \"currentValue\": version}"],
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v?(?<version>.*)$",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "jsonata",
+      "fileFormat": "json",
+      "managerFilePatterns": ["src/dependencies/helm.json"],
+      "matchStrings": ["{\"depName\": 'helm/helm', \"currentValue\": version}"],
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v?(?<version>.*)$",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "jsonata",
+      "fileFormat": "json",
+      "managerFilePatterns": ["src/dependencies/kubectl.json"],
+      "matchStrings": ["{\"depName\": 'kubernetes/kubernetes', \"currentValue\": version}"],
+      "datasourceTemplate": "github-tags",
+      "extractVersionTemplate": "^v?(?<version>.*)$",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "jsonata",
+      "fileFormat": "json",
+      "managerFilePatterns": ["src/dependencies/powershell.json"],
+      "matchStrings": ["{\"depName\": 'PowerShell/PowerShell', \"currentValue\": version}"],
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v?(?<version>.*)$",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "jsonata",
+      "fileFormat": "json",
+      "managerFilePatterns": ["src/dependencies/yq.json"],
+      "matchStrings": ["{\"depName\": 'mikefarah/yq', \"currentValue\": version}"],
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v?(?<version>.*)$",
+      "versioningTemplate": "semver"
+    }
+  ]
+}
