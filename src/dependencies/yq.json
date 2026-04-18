@@ -5,5 +5,5 @@
     "amd64": "d56bf5c6819e8e696340c312bd70f849dc1678a7cda9c2ad63eebd906371d56b",
     "arm64": "03061b2a50c7a498de2bbb92d7cb078ce433011f085a4994117c2726be4106ea"
   },
-  "download_url": "https://github.com/mikefarah/yq/releases/download/{version}/yq_linux_{arch}"
+  "download_url": "https://github.com/mikefarah/yq/releases/download/v{version}/yq_linux_{arch}"
 }
