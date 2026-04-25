@@ -33,6 +33,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         git \
         git-lfs \
         iputils-ping \
+        libicu78 \
         libunwind8 \
         jq \
         lsb-release \
