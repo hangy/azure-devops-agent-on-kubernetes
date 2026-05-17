@@ -1,5 +1,5 @@
 ARG ARG_UBUNTU_BASE_IMAGE="ubuntu"
-ARG ARG_UBUNTU_BASE_IMAGE_TAG="24.04"
+ARG ARG_UBUNTU_BASE_IMAGE_TAG="26.04"
 
 FROM ${ARG_UBUNTU_BASE_IMAGE}:${ARG_UBUNTU_BASE_IMAGE_TAG} AS base
 WORKDIR /azp
@@ -33,6 +33,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         git \
         git-lfs \
         iputils-ping \
+        libicu78 \
         libunwind8 \
         jq \
         lsb-release \
