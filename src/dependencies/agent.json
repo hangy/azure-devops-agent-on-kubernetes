@@ -1,6 +1,6 @@
 {
   "name": "azure-devops-agent",
-  "version": "4.272.0",
+  "version": "4.273.0",
   "download_arch": {
     "amd64": "x64",
     "arm64": "arm64"
