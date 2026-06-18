@@ -1,6 +1,6 @@
 {
   "name": "helm",
-  "version": "4.2.1",
+  "version": "4.2.2",
   "sha256": {
     "amd64": "479dca836e5b45e8bd222400c5591b0e3a647378f03ff96597180db97c17fdae",
     "arm64": "596b9a73d366c1e72ce67d595c22805480e30914593aafbc9f547694e72814db"
