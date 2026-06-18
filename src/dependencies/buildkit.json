@@ -1,6 +1,6 @@
 {
   "name": "buildkit",
-  "version": "0.30.0",
+  "version": "0.31.0",
   "sha256": {
     "amd64": "2da148c50540409988c837e62b72176e4a9ad7855548a2dd6ea1cd0c0d2d360d",
     "arm64": "d0c9601e49f441dcc5c6493c884275a5470dcc9c188c96573c4dd503f2fde97d"
