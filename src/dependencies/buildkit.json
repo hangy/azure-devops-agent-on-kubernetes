@@ -2,8 +2,8 @@
   "name": "buildkit",
   "version": "0.31.1",
   "sha256": {
-    "amd64": "a13e961a4e4e1afbece1ddfd6818ff726fe4577a99b2763e677456016827f4b7",
-    "arm64": "74efb4326bac95ecc562a139d34833f4ae7a8df884780910c7ef2cb50e92db66"
+    "amd64": "1fc78750d0c96bdc18799a3c0b551d6807bd4939e8cd79e357823e467451e16e",
+    "arm64": "a4c9bef205f61c1e4253bdfd196e1db303aca25e8756105d75c6fddfbab7903f"
   },
   "download_url": "https://github.com/moby/buildkit/releases/download/v{version}/buildkit-v{version}.linux-{arch}.tar.gz"
 }
