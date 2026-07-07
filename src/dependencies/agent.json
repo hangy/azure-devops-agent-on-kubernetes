@@ -1,13 +1,13 @@
 {
   "name": "azure-devops-agent",
-  "version": "4.274.1",
+  "version": "4.275.0",
   "download_arch": {
     "amd64": "x64",
     "arm64": "arm64"
   },
   "sha256": {
-    "amd64": "3cdf1be5bb95c31f2e9d7f7d8808f632307fa6be88dd882c3e8402b665ea5ded",
-    "arm64": "3f7b6dfd8b8d682a8f4a7043f864c7e422ec8dba1d75b1a20fef047c54f3fa20"
+    "amd64": "416eb9340385d599e3159b86d08c03754af24d1cb2b6624425142a47ca65f346",
+    "arm64": "a25bec8fa91ea37e6af9d5f997171b0988fff586b0a4db55172cab100a4dd45c"
   },
   "download_url": "https://download.agent.dev.azure.com/agent/{version}/vsts-agent-linux-{arch}-{version}.tar.gz"
 }
