@@ -1,13 +1,13 @@
 {
   "name": "powershell",
-  "version": "7.6.4",
+  "version": "7.6.5",
   "download_arch": {
     "amd64": "x64",
     "arm64": "arm64"
   },
   "sha256": {
-    "amd64": "4471b5a36bfe86ec7af8525d36bb1cacba0128e7aac22d05cc064bc00e604721",
-    "arm64": "d4ef2382fa452f2ccbdb48a01adbbce9ed64954872123970c16be6d086d1224b"
+    "amd64": "b34ab3b19acac1d3d4d0d3cfdb02acf62f457b0b6a962ff008132033f7566844",
+    "arm64": "ed4084f215d8bce2edd23aa7cb1f1e7b0818e41363a635a22065d2701b6141df"
   },
   "download_url": "https://github.com/PowerShell/PowerShell/releases/download/v{version}/powershell-{version}-linux-{arch}.tar.gz"
 }
