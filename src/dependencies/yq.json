@@ -1,6 +1,6 @@
 {
   "name": "yq",
-  "version": "4.53.3",
+  "version": "4.53.6",
   "sha256": {
     "amd64": "fa52a4e758c63d38299163fbdd1edfb4c4963247918bf9c1c5d31d84789eded4",
     "arm64": "578648e463a11c1b6db6010cbf41eafed6bee79466fcffa1bb446672cf7945ea"
