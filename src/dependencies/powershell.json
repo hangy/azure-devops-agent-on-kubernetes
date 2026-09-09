@@ -6,8 +6,8 @@
     "arm64": "arm64"
   },
   "sha256": {
-    "amd64": "b34ab3b19acac1d3d4d0d3cfdb02acf62f457b0b6a962ff008132033f7566844",
-    "arm64": "ed4084f215d8bce2edd23aa7cb1f1e7b0818e41363a635a22065d2701b6141df"
+    "amd64": "ddbc4a2d113bbd46d283cfedcbcd117a70caefd7673f41f2b4e0000badf103bc",
+    "arm64": "924829e54c983648f6f1419a2dc7f9433c861b2fb5bd57736ff096c24f133729"
   },
   "download_url": "https://github.com/PowerShell/PowerShell/releases/download/v{version}/powershell-{version}-linux-{arch}.tar.gz"
 }
