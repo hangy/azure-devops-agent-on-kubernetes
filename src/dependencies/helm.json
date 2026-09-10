@@ -2,8 +2,8 @@
   "name": "helm",
   "version": "4.3.0",
   "sha256": {
-    "amd64": "c306b46f719b0a4da32d0f78ee21bf90ce8d602f15b22ab753f0674d1670a7f3",
-    "arm64": "564de2191b881e9f71b5606b25345821ea1682f06ab90499d3ab22b530176da1"
+    "amd64": "86584a54def73570558f66f5111cc53dfed56689637ae32c1201205d494f54fb",
+    "arm64": "31c5794dd55c66a51e6b7d2e2ac7a114ae8b1de41ff1d9ba51748ac973b06a08"
   },
   "download_url": "https://get.helm.sh/helm-v{version}-linux-{arch}.tar.gz"
 }
