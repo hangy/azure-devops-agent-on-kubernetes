@@ -1,6 +1,6 @@
 {
   "name": "kubectl",
-  "version": "1.37.0",
+  "version": "1.37.1",
   "sha256": {
     "amd64": "6129359f4e1f3848a5572ccb0b26cf28b8ca08cef38c95a765b2f64a2c961a2f",
     "arm64": "922df28df248cc00a9e025f947704f1d1482de64ece54cfe57e61f19eaf1eef3"
