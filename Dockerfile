@@ -1,10 +1,25 @@
 ARG ARG_UBUNTU_BASE_IMAGE="ubuntu"
 ARG ARG_UBUNTU_BASE_IMAGE_TAG="24.04"
+# Pinned manifest-list digest of the base image above (covers amd64/arm64).
+# Kept current by Renovate (docker:pinDigests preset) / Dependabot: bump together with the tag.
+# Look up the current digest with: docker buildx imagetools inspect ubuntu:24.04
+ARG ARG_UBUNTU_BASE_IMAGE_DIGEST="sha256:68ee22004a9109b44973313b02ff7b1de250f1de0f5ecb628d73f579aaff33ac"
+# Pinned point-in-time view of the Ubuntu archive, UTC (YYYYMMDDTHHMMSSZ).
+# Every apt operation against the Ubuntu archive resolves as of this timestamp,
+# so builds are reproducible and the exact package set stays traceable.
+# Bump regularly (first of each month) to pull in security updates; a scheduled
+# workflow proposes the bump automatically. Must be >= the noble release date.
+ARG ARG_UBUNTU_SNAPSHOT="20261001T000000Z"
 
-FROM ${ARG_UBUNTU_BASE_IMAGE}:${ARG_UBUNTU_BASE_IMAGE_TAG} AS base
+FROM ${ARG_UBUNTU_BASE_IMAGE}:${ARG_UBUNTU_BASE_IMAGE_TAG}@${ARG_UBUNTU_BASE_IMAGE_DIGEST} AS base
 WORKDIR /azp
 # BuildKit sets TARGETARCH/TARGETPLATFORM when using buildx/--platform
 ARG TARGETARCH=amd64
+# Re-declare global ARGs to use them after FROM
+ARG ARG_UBUNTU_BASE_IMAGE
+ARG ARG_UBUNTU_BASE_IMAGE_TAG
+ARG ARG_UBUNTU_BASE_IMAGE_DIGEST
+ARG ARG_UBUNTU_SNAPSHOT
 
 # Tool versions for reproducible builds
 ARG APT_UPGRADE=1
@@ -14,7 +29,10 @@ LABEL org.opencontainers.image.title="Azure DevOps Agent on Kubernetes" \
       org.opencontainers.image.source="https://github.com/hangy/azure-devops-agent-on-kubernetes" \
       org.opencontainers.image.description="Self-hosted Azure DevOps build agent image with pinned tool versions" \
       org.opencontainers.image.vendor="hangy" \
-      org.opencontainers.image.licenses="MIT"
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.base.name="${ARG_UBUNTU_BASE_IMAGE}:${ARG_UBUNTU_BASE_IMAGE_TAG}" \
+      org.opencontainers.image.base.digest="${ARG_UBUNTU_BASE_IMAGE_DIGEST}" \
+      io.ubuntu.snapshot="${ARG_UBUNTU_SNAPSHOT}"
 
 # To make it easier for build and release pipelines to run apt-get,
 # configure apt to not require confirmation (assume the -y argument by default)
@@ -22,7 +40,25 @@ ENV DEBIAN_FRONTEND=noninteractive
 SHELL ["/bin/bash", "-euxo", "pipefail", "-c"]
 RUN echo "APT::Get::Assume-Yes \"true\";" > /etc/apt/apt.conf.d/90assumeyes
 
-# Install required base tools (optional upgrade controlled by APT_UPGRADE)
+# Fail fast on a malformed snapshot ID (expected format: YYYYMMDDTHHMMSSZ, UTC)
+RUN if ! [[ "${ARG_UBUNTU_SNAPSHOT}" =~ ^[0-9]{8}T[0-9]{6}Z$ ]]; then echo "error: ARG_UBUNTU_SNAPSHOT='${ARG_UBUNTU_SNAPSHOT}' is not in YYYYMMDDTHHMMSSZ format" >&2; exit 1; fi
+
+# snapshot.ubuntu.com is HTTPS-only but the minimal base image ships no CA
+# certificates yet, so bootstrap just ca-certificates from the live archive.
+# Exception to pinning: this one package tracks the live archive at build time
+# (taking the latest CA bundle is also the safer choice); everything else below
+# resolves to the snapshot.
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt \
+    apt-get update; \
+    apt-get install -y --no-install-recommends ca-certificates
+
+# Pin every subsequent Ubuntu-archive operation to the snapshot timestamp.
+# Third-party repos (Microsoft, Docker) do not advertise snapshot support and
+# are unaffected: they keep resolving to their latest packages.
+RUN echo "APT::Snapshot \"${ARG_UBUNTU_SNAPSHOT}\";" > /etc/apt/apt.conf.d/50snapshot
+
+# Install required base tools from the snapshot (optional upgrade controlled by APT_UPGRADE)
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt \
     apt-get update; \

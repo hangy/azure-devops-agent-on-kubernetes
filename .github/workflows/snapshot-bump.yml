@@ -1,0 +1,56 @@
+name: Bump Ubuntu snapshot
+on:
+  schedule:
+    # First of every month: pick up Ubuntu security updates via a fresh snapshot
+    - cron: "0 6 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Harden the runner (Audit all outbound calls)
+      uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2 # v2.22.2
+      with:
+        egress-policy: audit
+
+    - name: Checkout
+      uses: actions/checkout@3d3c42e5aac5ba805825da7640c181273ba90b1 # v7.0.1
+
+    - name: Bump ARG_UBUNTU_SNAPSHOT to the first of this month
+      id: bump
+      shell: bash
+      run: |
+        set -euo pipefail
+        SNAPSHOT="$(date -u +%Y%m01T000000Z)"
+        CURRENT="$(sed -n -E 's/^ARG ARG_UBUNTU_SNAPSHOT="([^"]+)".*/\1/p' Dockerfile)"
+        echo "current=${CURRENT}" >> "$GITHUB_OUTPUT"
+        echo "snapshot=${SNAPSHOT}" >> "$GITHUB_OUTPUT"
+        if [ "${CURRENT}" != "${SNAPSHOT}" ]; then
+          sed -i -E "s/^ARG ARG_UBUNTU_SNAPSHOT=\"[^\"]+\"/ARG ARG_UBUNTU_SNAPSHOT=\"${SNAPSHOT}\"/" Dockerfile
+          echo "updated=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "updated=false" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Open bump PR
+      if: steps.bump.outputs.updated == 'true'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        set -euo pipefail
+        BRANCH="chore/bump-ubuntu-snapshot-${{ steps.bump.outputs.snapshot }}"
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git checkout -b "${BRANCH}"
+        git add Dockerfile
+        git commit -m "chore(deps): bump Ubuntu snapshot to ${{ steps.bump.outputs.snapshot }}"
+        git push --set-upstream origin "${BRANCH}"
+        gh pr create --fill --title "chore(deps): bump Ubuntu snapshot to ${{ steps.bump.outputs.snapshot }}" --body "Monthly refresh of the snapshot-pinned Ubuntu archive view so security updates flow into the agent image. CI builds the image from the new snapshot for validation."

@@ -42,6 +42,7 @@ jobs:
         context: src
         file: ./Dockerfile
         push: true
+        pull: true
         tags: ${{ env.DOCKER_REPO_TAG }}
 
   release:
