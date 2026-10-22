@@ -43,4 +43,5 @@ jobs:
         file: ./Dockerfile
         # push: true
         push: false
+        pull: true
         tags: ${{ env.DOCKER_REPO_TAG }}

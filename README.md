@@ -276,7 +276,7 @@ Please refer the values.yaml for other parameters.
 
 The binaries and packages listed below are included in the docker image used by the helm chart:
 
-- Ubuntu 20.04
+- Ubuntu 24.04 (base image digest-pinned, apt packages snapshot-pinned — see below)
 - unzip
 - jq
 - yq
@@ -288,3 +288,14 @@ The binaries and packages listed below are included in the docker image used by 
 - Docker CLI
 - Azure CLI
   - with Azure DevOps extension
+
+## Reproducible Ubuntu base
+
+The image pins the Ubuntu layer two ways so builds are reproducible and traceable:
+
+- The base image is pinned by digest (`ARG_UBUNTU_BASE_IMAGE_DIGEST`), kept current by Renovate/Dependabot.
+- All `apt` operations against the Ubuntu archive resolve to a pinned point in time (`ARG_UBUNTU_SNAPSHOT`, via `APT::Snapshot` / [snapshot.ubuntu.com](https://snapshot.ubuntu.com/)).
+
+`docker inspect` shows exactly what an image was built from via the `org.opencontainers.image.base.name`, `org.opencontainers.image.base.digest`, and `io.ubuntu.snapshot` labels.
+
+Security updates flow in through two automated refresh loops: digest updates for the base image, and a monthly scheduled workflow that proposes a snapshot bump PR (CI builds the image from the new snapshot for validation).
