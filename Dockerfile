@@ -9,7 +9,7 @@ ARG ARG_UBUNTU_BASE_IMAGE_DIGEST="sha256:fe81560990fae86dc4743202b2cb4d3df98d0bc
 # so builds are reproducible and the exact package set stays traceable.
 # Bump regularly (first of each month) to pull in security updates; a scheduled
 # workflow proposes the bump automatically. Must be >= the noble release date.
-ARG ARG_UBUNTU_SNAPSHOT="20261027T210000Z"
+ARG ARG_UBUNTU_SNAPSHOT="20261029T090000Z"
 
 FROM ${ARG_UBUNTU_BASE_IMAGE}:${ARG_UBUNTU_BASE_IMAGE_TAG}@${ARG_UBUNTU_BASE_IMAGE_DIGEST} AS base
 WORKDIR /azp
