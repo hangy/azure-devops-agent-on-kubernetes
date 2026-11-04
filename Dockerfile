@@ -7,8 +7,8 @@ ARG ARG_UBUNTU_BASE_IMAGE_DIGEST="sha256:fe81560990fae86dc4743202b2cb4d3df98d0bc
 # Pinned point-in-time view of the Ubuntu archive, UTC (YYYYMMDDTHHMMSSZ).
 # Every apt operation against the Ubuntu archive resolves as of this timestamp,
 # so builds are reproducible and the exact package set stays traceable.
-# Bump regularly (first of each month) to pull in security updates; a scheduled
-# workflow proposes the bump automatically. Must be >= the noble release date.
+# Bump regularly to pull in security updates; a scheduled workflow proposes the
+# bump automatically (monthly, or on demand during a CVE wave). Must be >= the noble release date.
 ARG ARG_UBUNTU_SNAPSHOT="20261101T000000Z"
 
 FROM ${ARG_UBUNTU_BASE_IMAGE}:${ARG_UBUNTU_BASE_IMAGE_TAG}@${ARG_UBUNTU_BASE_IMAGE_DIGEST} AS base
@@ -58,10 +58,16 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 # are unaffected: they keep resolving to their latest packages.
 RUN echo "APT::Snapshot \"${ARG_UBUNTU_SNAPSHOT}\";" > /etc/apt/apt.conf.d/50snapshot
 
-# Install required base tools from the snapshot (optional upgrade controlled by APT_UPGRADE)
+# Upgrade preinstalled packages to the snapshot, then install required base
+# tools from it (upgrade controlled by APT_UPGRADE).
+# full-upgrade (not upgrade): a security update that needs new dependencies
+# or obsoletes a package would otherwise stay "kept back" — and under a
+# pinned snapshot it would stay vulnerable no matter how often the snapshot
+# is bumped. Removals are safe here: nothing user-installed exists yet.
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt \
     apt-get update; \
+    if [ "${APT_UPGRADE}" = "1" ]; then apt-get -y full-upgrade; fi; \
     apt-get install -y --no-install-recommends \
         apt-transport-https \
         ca-certificates \
@@ -74,8 +80,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         lsb-release \
         software-properties-common \
         sudo \
-        unzip; \
-    if [ "${APT_UPGRADE}" = "1" ]; then apt-get -y upgrade; fi
+        unzip
 
 FROM base AS download-agent
 SHELL ["/bin/bash", "-euo", "pipefail", "-c"]

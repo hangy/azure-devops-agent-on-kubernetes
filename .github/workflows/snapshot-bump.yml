@@ -1,7 +1,8 @@
 name: Bump Ubuntu snapshot
 on:
   schedule:
-    # First of every month: pick up Ubuntu security updates via a fresh snapshot
+    # Monthly plus on-demand (workflow_dispatch, e.g. during a CVE wave):
+    # pick up Ubuntu security updates via a fresh snapshot
     - cron: "0 6 1 * *"
   workflow_dispatch:
 
@@ -23,12 +24,16 @@ jobs:
     - name: Checkout
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-    - name: Bump ARG_UBUNTU_SNAPSHOT to the first of this month
+    - name: Bump ARG_UBUNTU_SNAPSHOT to the current time
       id: bump
       shell: bash
       run: |
         set -euo pipefail
-        SNAPSHOT="$(date -u +%Y%m01T000000Z)"
+        # Full current UTC time (not just the month): a manual dispatch during
+        # a CVE wave picks up fixes published hours ago instead of waiting for
+        # the next month. Any timestamp after 2023-03-01 resolves on
+        # snapshot.ubuntu.com, including the current minute (verified).
+        SNAPSHOT="$(date -u +%Y%m%dT%H%M%SZ)"
         CURRENT="$(sed -n -E 's/^ARG ARG_UBUNTU_SNAPSHOT="([^"]+)".*/\1/p' Dockerfile)"
         echo "current=${CURRENT}" >> "$GITHUB_OUTPUT"
         echo "snapshot=${SNAPSHOT}" >> "$GITHUB_OUTPUT"
@@ -53,4 +58,4 @@ jobs:
         git add Dockerfile
         git commit -m "chore(deps): bump Ubuntu snapshot to ${{ steps.bump.outputs.snapshot }}"
         git push --set-upstream origin "${BRANCH}"
-        gh pr create --fill --title "chore(deps): bump Ubuntu snapshot to ${{ steps.bump.outputs.snapshot }}" --body "Monthly refresh of the snapshot-pinned Ubuntu archive view so security updates flow into the agent image. CI builds the image from the new snapshot for validation."
+        gh pr create --fill --title "chore(deps): bump Ubuntu snapshot to ${{ steps.bump.outputs.snapshot }}" --body "Refresh of the snapshot-pinned Ubuntu archive view so security updates flow into the agent image (scheduled monthly, or manually during a CVE wave). CI builds the image from the new snapshot for validation."

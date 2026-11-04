@@ -298,4 +298,4 @@ The image pins the Ubuntu layer two ways so builds are reproducible and traceabl
 
 `docker inspect` shows exactly what an image was built from via the `org.opencontainers.image.base.name`, `org.opencontainers.image.base.digest`, and `io.ubuntu.snapshot` labels.
 
-Security updates flow in through two automated refresh loops: digest updates for the base image, and a monthly scheduled workflow that proposes a snapshot bump PR (CI builds the image from the new snapshot for validation).
+Security updates flow in through two automated refresh loops: digest updates for the base image, and a scheduled workflow that proposes a snapshot bump PR (monthly, or manually during a CVE wave; CI builds the image from the new snapshot for validation).
