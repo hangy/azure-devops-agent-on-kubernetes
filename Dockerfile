@@ -1,14 +1,15 @@
 ARG ARG_UBUNTU_BASE_IMAGE="ubuntu"
 ARG ARG_UBUNTU_BASE_IMAGE_TAG="24.04"
 # Pinned manifest-list digest of the base image above (covers amd64/arm64).
-# Kept current by Renovate (docker:pinDigests preset) / Dependabot: bump together with the tag.
+# Kept current by the Ubuntu base refresh workflow; Renovate handles tag upgrades.
 # Look up the current digest with: docker buildx imagetools inspect ubuntu:24.04
 ARG ARG_UBUNTU_BASE_IMAGE_DIGEST="sha256:73b999393d07f2bf65a40373778a44dc9a6d54ad7718d29247d8ff9413c4d6a8"
 # Pinned point-in-time view of the Ubuntu archive, UTC (YYYYMMDDTHHMMSSZ).
 # Every apt operation against the Ubuntu archive resolves as of this timestamp,
 # so builds are reproducible and the exact package set stays traceable.
 # Bump regularly to pull in security updates; a scheduled workflow proposes the
-# bump automatically (monthly, or on demand during a CVE wave). Must be >= the noble release date.
+# bump when package indexes change (checked every six hours, or on demand).
+# Must be >= the noble release date.
 ARG ARG_UBUNTU_SNAPSHOT="20261116T084115Z"
 
 FROM ${ARG_UBUNTU_BASE_IMAGE}:${ARG_UBUNTU_BASE_IMAGE_TAG}@${ARG_UBUNTU_BASE_IMAGE_DIGEST} AS base

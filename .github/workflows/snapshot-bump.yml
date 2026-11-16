@@ -1,10 +1,13 @@
-name: Bump Ubuntu snapshot
+name: Refresh Ubuntu base
 on:
   schedule:
-    # Monthly plus on-demand (workflow_dispatch, e.g. during a CVE wave):
-    # pick up Ubuntu security updates via a fresh snapshot
-    - cron: "0 6 1 * *"
+    # Check every six hours, plus on-demand during a CVE wave.
+    - cron: "23 */6 * * *"
   workflow_dispatch:
+
+concurrency:
+  group: ubuntu-snapshot-bump
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -23,39 +26,62 @@ jobs:
 
     - name: Checkout
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        ref: ${{ github.event.repository.default_branch }}
 
-    - name: Bump ARG_UBUNTU_SNAPSHOT to the current time
-      id: bump
+    - name: Find existing bump PR
+      id: pr
       shell: bash
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        BASE_BRANCH: ${{ github.event.repository.default_branch }}
       run: |
         set -euo pipefail
-        # Full current UTC time (not just the month): a manual dispatch during
-        # a CVE wave picks up fixes published hours ago instead of waiting for
-        # the next month. Any timestamp after 2023-03-01 resolves on
-        # snapshot.ubuntu.com, including the current minute (verified).
-        SNAPSHOT="$(date -u +%Y%m%dT%H%M%SZ)"
-        CURRENT="$(sed -n -E 's/^ARG ARG_UBUNTU_SNAPSHOT="([^"]+)".*/\1/p' Dockerfile)"
-        echo "current=${CURRENT}" >> "$GITHUB_OUTPUT"
-        echo "snapshot=${SNAPSHOT}" >> "$GITHUB_OUTPUT"
-        if [ "${CURRENT}" != "${SNAPSHOT}" ]; then
-          sed -i -E "s/^ARG ARG_UBUNTU_SNAPSHOT=\"[^\"]+\"/ARG ARG_UBUNTU_SNAPSHOT=\"${SNAPSHOT}\"/" Dockerfile
-          echo "updated=true" >> "$GITHUB_OUTPUT"
+        BRANCH="chore/bump-ubuntu-snapshot"
+        PR="$(gh pr list --state open --base "${BASE_BRANCH}" --head "${BRANCH}" \
+          --json number,isCrossRepository \
+          --jq '[.[] | select(.isCrossRepository == false)] | first // empty')"
+        if [ -n "${PR}" ]; then
+          echo "number=$(jq -r '.number' <<< "${PR}")" >> "$GITHUB_OUTPUT"
+          git fetch origin "refs/heads/${BRANCH}:refs/remotes/origin/${BRANCH}"
+          git checkout -b "${BRANCH}" "origin/${BRANCH}"
         else
-          echo "updated=false" >> "$GITHUB_OUTPUT"
+          # Fetch a leftover closed/merged PR branch for the push lease.
+          REMOTE="$(git ls-remote --heads origin "refs/heads/${BRANCH}")"
+          if [ -n "${REMOTE}" ]; then
+            git fetch origin "refs/heads/${BRANCH}:refs/remotes/origin/${BRANCH}"
+          fi
+          git checkout -b "${BRANCH}"
         fi
+        echo "branch=${BRANCH}" >> "$GITHUB_OUTPUT"
 
-    - name: Open bump PR
+    - name: Refresh Ubuntu image digest and snapshot if changed
+      id: bump
+      shell: bash
+      run: python3 .github/scripts/bump-ubuntu-snapshot.py
+
+    - name: Create or update bump PR
       if: steps.bump.outputs.updated == 'true'
       shell: bash
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        BASE_BRANCH: ${{ github.event.repository.default_branch }}
+        BRANCH: ${{ steps.pr.outputs.branch }}
+        PR_NUMBER: ${{ steps.pr.outputs.number }}
+        SNAPSHOT: ${{ steps.bump.outputs.snapshot }}
+        DIGEST: ${{ steps.bump.outputs.digest }}
       run: |
         set -euo pipefail
-        BRANCH="chore/bump-ubuntu-snapshot-${{ steps.bump.outputs.snapshot }}"
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
-        git checkout -b "${BRANCH}"
         git add Dockerfile
-        git commit -m "chore(deps): bump Ubuntu snapshot to ${{ steps.bump.outputs.snapshot }}"
-        git push --set-upstream origin "${BRANCH}"
-        gh pr create --fill --title "chore(deps): bump Ubuntu snapshot to ${{ steps.bump.outputs.snapshot }}" --body "Refresh of the snapshot-pinned Ubuntu archive view so security updates flow into the agent image (scheduled monthly, or manually during a CVE wave). CI builds the image from the new snapshot for validation."
+        TITLE="chore(deps): refresh Ubuntu base image and snapshot"
+        BODY="Refresh the Ubuntu base pins: image digest ${DIGEST}, archive snapshot ${SNAPSHOT}. The multi-platform image digest or package-index SHA256 checksums changed. Unchanged pins are preserved. Checked every six hours, or manually during a CVE wave."
+        git commit -m "${TITLE}"
+        if [ -n "${PR_NUMBER}" ]; then
+          git push origin "${BRANCH}"
+          gh pr edit "${PR_NUMBER}" --title "${TITLE}" --body "${BODY}"
+        else
+          git push --force-with-lease --set-upstream origin "${BRANCH}"
+          gh pr create --base "${BASE_BRANCH}" --head "${BRANCH}" --title "${TITLE}" --body "${BODY}"
+        fi

@@ -4,8 +4,5 @@ updates:
     directory: /
     schedule:
       interval: daily
-
-  - package-ecosystem: docker
-    directory: /
-    schedule:
-      interval: daily
+  # Ubuntu digest updates are handled by snapshot-bump.yml.
+  # Renovate continues to propose Ubuntu tag upgrades.

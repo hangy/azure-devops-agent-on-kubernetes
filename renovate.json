@@ -2,6 +2,15 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended", "docker:pinDigests"],
   "enabledManagers": ["dockerfile", "custom.jsonata"],
+  "packageRules": [
+    {
+      "description": "Ubuntu digest refreshes are handled by snapshot-bump.yml",
+      "matchManagers": ["dockerfile"],
+      "matchPackageNames": ["ubuntu"],
+      "matchUpdateTypes": ["digest", "pinDigest"],
+      "enabled": false
+    }
+  ],
   "customManagers": [
     {
       "customType": "jsonata",
