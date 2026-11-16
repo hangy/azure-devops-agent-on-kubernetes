@@ -3,7 +3,7 @@ ARG ARG_UBUNTU_BASE_IMAGE_TAG="24.04"
 # Pinned manifest-list digest of the base image above (covers amd64/arm64).
 # Kept current by Renovate (docker:pinDigests preset) / Dependabot: bump together with the tag.
 # Look up the current digest with: docker buildx imagetools inspect ubuntu:24.04
-ARG ARG_UBUNTU_BASE_IMAGE_DIGEST="sha256:2198e4c65076e9cb0b3d695219df667c0e3b0072da64ca3c2648aca17dcecaf5"
+ARG ARG_UBUNTU_BASE_IMAGE_DIGEST="sha256:73b999393d07f2bf65a40373778a44dc9a6d54ad7718d29247d8ff9413c4d6a8"
 # Pinned point-in-time view of the Ubuntu archive, UTC (YYYYMMDDTHHMMSSZ).
 # Every apt operation against the Ubuntu archive resolves as of this timestamp,
 # so builds are reproducible and the exact package set stays traceable.
