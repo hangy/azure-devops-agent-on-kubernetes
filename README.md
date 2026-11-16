@@ -293,9 +293,11 @@ The binaries and packages listed below are included in the docker image used by 
 
 The image pins the Ubuntu layer two ways so builds are reproducible and traceable:
 
-- The base image is pinned by digest (`ARG_UBUNTU_BASE_IMAGE_DIGEST`), kept current by Renovate/Dependabot.
+- The base image is pinned by digest (`ARG_UBUNTU_BASE_IMAGE_DIGEST`), kept current by the Ubuntu base refresh workflow. Renovate still proposes tag upgrades.
 - All `apt` operations against the Ubuntu archive resolve to a pinned point in time (`ARG_UBUNTU_SNAPSHOT`, via `APT::Snapshot` / [snapshot.ubuntu.com](https://snapshot.ubuntu.com/)).
 
 `docker inspect` shows exactly what an image was built from via the `org.opencontainers.image.base.name`, `org.opencontainers.image.base.digest`, and `io.ubuntu.snapshot` labels.
 
-Security updates flow in through two automated refresh loops: digest updates for the base image, and a scheduled workflow that proposes a snapshot bump PR (monthly, or manually during a CVE wave; CI builds the image from the new snapshot for validation).
+The Ubuntu base refresh workflow checks every six hours (also available manually during a CVE wave). It checks Docker Hub for the current Ubuntu 24.04 multi-platform image digest and compares the SHA256 checksums of the uncompressed binary package indexes in Ubuntu's `Release` metadata for all default suites (`noble`, `noble-updates`, `noble-security`, and `noble-backports`), all four components, and both supported architectures (amd64 and arm64, including the ports archive). Timestamp, signature, and other metadata-only changes do not trigger a snapshot bump. If either the image digest or package indexes change, it creates a single Ubuntu base update PR or updates the existing one on `chore/bump-ubuntu-snapshot`. Only changed pins are updated; otherwise it leaves the Dockerfile and PR untouched. Failed downloads, invalid image manifests, or incomplete checksums fail the workflow rather than proposing an unverified update. Separate Dependabot/Renovate digest updates are disabled to avoid duplicate PRs.
+
+The workflow uses `GITHUB_TOKEN`, so its PR creation and pushes do not automatically trigger other GitHub Actions workflows. PR build validation requires an approved repository token/GitHub App setup that can trigger workflows, or a maintainer-triggered PR event.
