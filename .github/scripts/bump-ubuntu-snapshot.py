@@ -13,7 +13,7 @@ from urllib.request import Request, urlopen
 
 
 COMPONENTS = ("main", "restricted", "universe", "multiverse")
-ARCHIVES = {"ubuntu": "amd64", "ubuntu-ports": "arm64"}
+ARCHITECTURES = ("amd64", "arm64")
 SNAPSHOT_ARG = re.compile(
     r'^(ARG ARG_UBUNTU_SNAPSHOT=")([0-9]{8}T[0-9]{6}Z)(")', re.MULTILINE
 )
@@ -84,14 +84,14 @@ def package_checksums(release: str, architecture: str) -> dict[str, str]:
 
 def snapshot_checksums(snapshot: str, codename: str) -> dict[str, dict[str, str]]:
     checksums = {}
-    for archive, architecture in ARCHIVES.items():
-        for suffix in ("", "-updates", "-security", "-backports"):
-            suite = f"{codename}{suffix}"
-            url = f"https://snapshot.ubuntu.com/{archive}/{snapshot}/dists/{suite}/Release"
-            print(f"Checking {url}", flush=True)
-            with urlopen(url, timeout=60) as response:
-                release = response.read().decode("utf-8")
-            checksums[f"{archive}/{suite}"] = package_checksums(release, architecture)
+    for suffix in ("", "-updates", "-security", "-backports"):
+        suite = f"{codename}{suffix}"
+        url = f"https://snapshot.ubuntu.com/ubuntu/{snapshot}/dists/{suite}/Release"
+        print(f"Checking {url}", flush=True)
+        with urlopen(url, timeout=60) as response:
+            release = response.read().decode("utf-8")
+        for architecture in ARCHITECTURES:
+            checksums[f"{suite}/{architecture}"] = package_checksums(release, architecture)
     return checksums
 
 
