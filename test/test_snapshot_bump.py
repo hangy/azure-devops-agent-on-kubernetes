@@ -115,26 +115,41 @@ class SnapshotBumpTests(unittest.TestCase):
             output.read_text(),
         )
 
-    def test_checks_every_suite_for_both_archives(self):
+    def test_checks_every_suite_for_both_architectures(self):
         with patch.object(snapshot_bump, "urlopen") as fetch:
-            fetch.return_value.__enter__.return_value.read.side_effect = [
-                release(architecture).encode()
-                for architecture in ("amd64", "arm64")
-                for _ in range(4)
-            ]
+            metadata = release().replace(
+                "SHA512:", release("arm64").split("SHA256:\n")[1]
+            )
+            fetch.return_value.__enter__.return_value.read.return_value = metadata.encode()
             result = snapshot_bump.snapshot_checksums(CURRENT, "noble")
         expected = {
-            f"{archive}/noble{suffix}"
-            for archive in ("ubuntu", "ubuntu-ports")
+            f"noble{suffix}/{architecture}"
             for suffix in ("", "-updates", "-security", "-backports")
+            for architecture in ("amd64", "arm64")
         }
         self.assertEqual(expected, result.keys())
+        for suite_architecture, checksums in result.items():
+            architecture = suite_architecture.split("/")[1]
+            self.assertEqual(snapshot_bump.package_checksums(metadata, architecture), checksums)
         self.assertEqual(
-            {f"https://snapshot.ubuntu.com/{archive_suite.split('/')[0]}/"
-             f"{CURRENT}/dists/{archive_suite.split('/')[1]}/Release"
-             for archive_suite in expected},
+            {f"https://snapshot.ubuntu.com/ubuntu/{CURRENT}/dists/noble{suffix}/Release"
+             for suffix in ("", "-updates", "-security", "-backports")},
             {call.args[0] for call in fetch.call_args_list},
         )
+        self.assertEqual(4, fetch.call_count)
+
+    def test_arm64_checksum_change_in_shared_release_bumps_snapshot(self):
+        def metadata(arm_checksum):
+            return release().replace(
+                "SHA512:", release("arm64", checksum=arm_checksum).split("SHA256:\n")[1]
+            ).encode()
+
+        with patch.object(snapshot_bump, "urlopen") as fetch:
+            fetch.return_value.__enter__.return_value.read.side_effect = (
+                [metadata("a" * 64)] * 4 + [metadata("b" * 64)] * 4
+            )
+            self.assertTrue(snapshot_bump.bump_snapshot(self.dockerfile, LATEST))
+        self.assertEqual(self.original.replace(CURRENT, LATEST), self.dockerfile.read_text())
 
     def test_incomplete_or_invalid_metadata_fails_without_bumping(self):
         for metadata in (
