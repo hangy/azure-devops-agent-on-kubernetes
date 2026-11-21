@@ -76,6 +76,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         git \
         git-lfs \
         iputils-ping \
+        libatomic1 \
         libunwind8 \
         jq \
         lsb-release \
