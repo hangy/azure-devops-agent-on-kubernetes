@@ -6,8 +6,8 @@
     "arm64": "arm64"
   },
   "sha256": {
-    "amd64": "c9579f76fd71a013e3b9010155454e20592d935134e4fcd04adc5283a820167e",
-    "arm64": "80319aaf824a2091eb521cfdcfcd10fd79c0f7eea4eb3de1908b5c42620ef349"
+    "amd64": "2316fd12fb8743a72a6ff68e5bf5a1b28dec7e155806818196c18900c05c4e03",
+    "arm64": "dcefb99c2f2e6dfa55f6ac4efecf26698dc56d16d9997dbc08571793872baf0d"
   },
   "download_url": "https://download.agent.dev.azure.com/agent/{version}/vsts-agent-linux-{arch}-{version}.tar.gz"
 }
