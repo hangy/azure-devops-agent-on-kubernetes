@@ -11,7 +11,7 @@ ARG ARG_UBUNTU_BASE_IMAGE_DIGEST="sha256:562111b88caa79c71391c0c4d3c2114a7d5c359
 # Bump regularly to pull in security updates; a scheduled workflow proposes the
 # bump when package indexes change (checked every six hours, or on demand).
 # Must be >= the noble release date.
-ARG ARG_UBUNTU_SNAPSHOT="20261126T214149Z"
+ARG ARG_UBUNTU_SNAPSHOT="20261127T084612Z"
 
 FROM ${ARG_UBUNTU_BASE_IMAGE}:${ARG_UBUNTU_BASE_IMAGE_TAG}@${ARG_UBUNTU_BASE_IMAGE_DIGEST} AS base
 WORKDIR /azp
